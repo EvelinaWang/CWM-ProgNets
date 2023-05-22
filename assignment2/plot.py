@@ -12,7 +12,7 @@ fig_name='test51.png'
 
 
 t = np.loadtxt(filename, delimiter=" ", dtype="float")
-print(t[3])
+
 plt.plot(t[:,0], t[:,1], label=label)  # Plot some data on the (implicit) axes.
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
