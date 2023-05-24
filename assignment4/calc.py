@@ -53,9 +53,9 @@ def make_seq(p1, p2):
 
 def get_if():
     ifs=get_if_list()
-    iface= "veth0-1" # "h1-eth0"
+    iface= "enx0c37965f89e8" # "h1-eth0"
     #for i in get_if_list():
-    #    if "eth0" in i:
+    #    if "veth0" in i:
     #        iface=i
     #        break;
     #if not iface:
@@ -69,7 +69,7 @@ def main():
     p = make_seq(num_parser, make_seq(op_parser,num_parser))
     s = ''
     #iface = get_if()
-    iface = "veth0-1"
+    iface = "enx0c37965f89e8"
 
     while True:
         s = input('> ')
