@@ -51,14 +51,20 @@ parser MyParser(packet_in packet,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
 
-    state start {
+    state start{
         packet.extract(hdr.ethernet);
-        packet.extract(hdr.ipv4);/* TODO: add parser logic */
-        transition accept;
+        /* TODO: add parser logic */
+        transition select(hdr.ethernet.type){
+        0x800 : parse_ipv4;
+        default: accept;}
+    }
+    
+    state parse_ipv4{
+        packet.extract(hdr.ipv4);
+        trasition accept;
     }
 }
-
-
+    
 /*************************************************************************
 ************   C H E C K S U M    V E R I F I C A T I O N   *************
 *************************************************************************/
@@ -80,7 +86,7 @@ control MyIngress(inout headers hdr,
     }
 
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
-        standard_metadata.egress_spec = standard_metadata.egress_port;
+        standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1; 
