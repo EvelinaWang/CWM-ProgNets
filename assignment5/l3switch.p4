@@ -83,6 +83,7 @@ control MyIngress(inout headers hdr,
         standard_metadata.egress_spec = standard_metadata.egress_port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = dstAddr;
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1; 
          /* TODO: fill out code in action body */
     }
 
