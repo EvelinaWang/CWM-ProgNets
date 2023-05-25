@@ -54,14 +54,15 @@ parser MyParser(packet_in packet,
     state start{
         packet.extract(hdr.ethernet);
         /* TODO: add parser logic */
-        transition select(hdr.ethernet.type){
+        transition select(hdr.ethernet.etherType){
         0x800 : parse_ipv4;
-        default: accept;}
+        default: accept;
+        }
     }
     
     state parse_ipv4{
         packet.extract(hdr.ipv4);
-        trasition accept;
+        transition accept;
     }
 }
     
@@ -112,7 +113,6 @@ control MyIngress(inout headers hdr,
         } /* TODO: fix ingress control logic
          *  - ipv4_lpm should be applied only when IPv4 header is valid
          */
-        ipv4_lpm.apply();
     }
 }
 

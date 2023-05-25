@@ -8,7 +8,7 @@ SRC_IP="169.254.46.161"
 # IP address of destination host
 DST_IP="192.168.10.1"
 # MAC address of destination host
-DST_MAC="0c:37:96:5f:89:e8"
+DST_MAC="0c:37:96:5f:89:d4"
 # Interface name (USB-Ethernet) of the host
 ETH="enx0c37965f89e8"
 
