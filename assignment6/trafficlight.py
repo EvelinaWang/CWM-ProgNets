@@ -8,6 +8,7 @@ from scapy.all import *
 
 src_MAC = "0c:37:96:5f:89:e8"
 dst_MAC = "e4:5f:01:8d:c8:32"
+
 class Traffic(Packet):
     name = "Traffic"
     fields_desc = [ StrFixedLenField("P", "P", length=1),
@@ -47,36 +48,41 @@ def moving(road):
 def num_traffic(a,b,s):
     if s == 1: #red
         a = waiting(a) 
+        print('red light in road a')
         b = moving(b)
     elif s == 2:
         a = waiting(a)
         b = waiting(b)
     else:
+        print('green light in road a')
         a = moving(a) 
         b = waiting(b)
     return a ,b
-    
+
 def main():
  
     iface = "enx0c37965f89e8"
-    Traffic.road_a, Traffic.road_b, Traffic.result_a = 0,1,0
+    road_a, road_b, result_a = 4,0,0
     
-    for i in range(0,5):
+    for i in range(0,15):
     
-        #Traffic.road_a, Traffic.road_b = num_traffic(Traffic.road_a, Traffic.road_b, Traffic.result_a)   
+        road_a, road_b = num_traffic(road_a, road_b, result_a)   
         
         try:
             pkt = eth_layer/Traffic(op="+", 
-                                    road_a=Traffic.road_a, 
-                                    road_b=Traffic.road_b,
-                                    result_a=Traffic.result_a)	
+                                    road_a=road_a, 
+                                    road_b=road_b,
+                                    result_a=result_a)	
             pkt = pkt/' '
-            print(pkt.summary)
+            #print(pkt.summary)
+            print('in road_a = ',road_a, 'road_b = ',road_b, 'a =' ,result_a)
+            
             resp = srp1(pkt, iface=iface,timeout=5, verbose=False)
-            traffic = resp[Traffic]
-            print(traffic.result_a)
+            #print(resp)
+            traffic = resp[Traffic] 
+            print('out road_a = ',traffic.road_a, 'road_b = ',traffic.road_b, 'a =' ,traffic.result_a)
             t.sleep(2)
-            Traffic.result_a = traffic.result_a
+            result_a = traffic.result_a
             
 	#pkt.show()
             #resp = srp1(pkt, iface=iface,timeout=10,verbose=False)
