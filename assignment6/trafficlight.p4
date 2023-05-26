@@ -3,15 +3,13 @@
 #include <core.p4>
 #include <v1model.p4>
 
-const bit<16> TYPE_IPV4 = 0x800;
-
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
 
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
-typedef bit<32> ip4Addr_t;
+typedef bit<32> p4wallAddr_t;
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -19,16 +17,21 @@ header ethernet_t {
     bit<16>   etherType;
 }
 
-header ipv4_t {
+const bit<16> P4wall_ETYPE = 0x1234;
+const bit<8>  P4wall_P     = 0x50;   // 'P'
+const bit<8>  P4wall_4     = 0x34;   // '4'
+const bit<8>  P4wall_VER   = 0x01;   // v0.1
+
+header p4wall_t {
     bit<8>    p;
     bit<8>    four;
     bit<8>    ver;
     bit<8>    op;
-    bit<32>    road_a;
-    bit<32>    road_b;
- 
-    ip4Addr_t srcAddr;
-    ip4Addr_t dstAddr;
+    bit<32>   road_a;
+    bit<32>   road_b;
+    bit<32>   result_a;
+    p4wallAddr_t srcAddr;
+    p4wallAddr_t dstAddr;
 }
 
 struct metadata {
@@ -37,7 +40,7 @@ struct metadata {
 
 struct headers {
     ethernet_t   ethernet;
-    ipv4_t       ipv4;
+    p4wall_t       p4wall;
 }
 
 /*************************************************************************
@@ -49,17 +52,26 @@ parser MyParser(packet_in packet,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
 
-    state start{
+    state start {
         packet.extract(hdr.ethernet);
-        /* TODO: add parser logic */
-        transition select(hdr.ethernet.etherType){
-        0x800 : parse_ipv4;
-        default: accept;
+        transition select(hdr.ethernet.etherType) {
+            P4wall_ETYPE : check_p4wall;
+            default      : accept;
         }
     }
-    
-    state parse_ipv4{
-        packet.extract(hdr.ipv4);
+
+    state check_p4wall {
+        transition select(packet.lookahead<p4wall_t>().p,
+        packet.lookahead<p4wall_t>().four,
+        packet.lookahead<p4wall_t>().ver) {
+            (P4wall_P, P4wall_4, P4wall_VER) : parse_p4wall;
+            default                          : accept;
+        }
+       
+    }
+
+    state parse_p4wall {
+        packet.extract(hdr.p4wall);
         transition accept;
     }
 }
@@ -80,34 +92,44 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
-    action drop() {
-        mark_to_drop(standard_metadata);
-    }
 
-    action send_back() {
+    action send_back(bit<32> result_a) {
+        hdr.p4wall.result_a = result_a;
         bit<48> temp = hdr.ethernet.srcAddr;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
         hdr.ethernet.dstAddr = temp;
         standard_metadata.egress_spec = standard_metadata.ingress_port;
-         /* TODO: fill out code in action body */
     }
     
-    action signal_red() {
-        send_back(1);/* TODO call send_back with operand_a + operand_b */
+    action operation_green_to_red() {
+        send_back(1);
+        /* TODO call send_back with result_a to be red */
     }
 
-    action operation_amber() {
-        send_back(2);/* TODO call send_back with operand_a - operand_b */
+    action operation_red_to_green() {
+        send_back(3);
+       /* TODO call send_back with result_a to be green */
     }
-
-    action operation_green() {
-        send_back(3);/* TODO call send_back with operand_a & operand_b */
+    
+    table operation {
+        key = {
+            hdr.p4wall.road_a : exact;
+            hdr.p4wall.road_b : exact;
+        }
+        actions = {
+            operation_green_to_red;
+            operation_red_to_green;
+        }
+        const default_action = operation_green_to_red();
+        
+        const entries = {
+             (0,1): operation_green_to_red();
+             (1,0): operation_red_to_green();
+        }
     }
-
- 
     apply {
-        if (hdr.ipv4.isValid()) {
-            hahahhaa
+        if (hdr.p4wall.isValid()) {
+            operation.apply();
         }
     }
 }
@@ -138,7 +160,7 @@ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
 control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
-        packet.emit(hdr.ipv4);/* TODO: add deparser logic */
+        packet.emit(hdr.p4wall);/* TODO: add deparser logic */
     }
 }
 
